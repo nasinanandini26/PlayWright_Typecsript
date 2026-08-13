@@ -1,0 +1,16 @@
+node_modules/
+dist/
+
+# Generated per-run reports and captures (folders are kept via .gitkeep)
+testreports/json/*
+testreports/html/*
+testreports/screenshots/*
+!testreports/**/.gitkeep
+
+test-results/
+playwright-report/
+*.log
+.DS_Store
+.env
+.claude/settings.local.json
+node_modules/

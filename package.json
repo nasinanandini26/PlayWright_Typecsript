@@ -1,0 +1,24 @@
+{
+  "name": "playwright-ts-bdd-pom",
+  "version": "1.0.0",
+  "description": "Playwright + TypeScript + Cucumber BDD framework using the Page Object Model, CSV-driven test data and a property-file based configuration layer.",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/runTests.js",
+    "test:tags": "node scripts/runTests.js --tags",
+    "test:login": "node scripts/runTests.js features/login.feature",
+    "test:inventory": "node scripts/runTests.js features/inventory.feature",
+    "exercise": "bash exercises/run.sh",
+    "install:browsers": "playwright install",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "playwright install"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^10.9.0",
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^20.14.0",
+    "csv-parse": "^5.5.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
