@@ -1,6 +1,7 @@
 import { Page, Locator, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ReportCollector } from './ReportCollector';
 
 /** Discriminated union so selectDropdown() can pick a strategy by text, value or index. */
 export type DropdownSelector = { byText: string } | { byValue: string } | { byIndex: number };
@@ -15,9 +16,26 @@ export type DropdownSelector = { byText: string } | { byValue: string } | { byIn
  *   - every interaction gets the same wait/retry/logging behaviour,
  *   - swapping the underlying automation engine later touches one file,
  *   - page classes stay focused on locators + business workflows.
+ *
+ * Every action that changes page state (click, type, select, ...) also
+ * captures a screenshot and files it against the currently running step
+ * via ReportCollector (see utility/ReportCollector.ts), which is what
+ * turns into the per-step screenshots in the generated HTML report. That
+ * call is a no-op outside of a running Cucumber scenario, so CommonActions
+ * stays usable from plain unit tests too.
  */
 export class CommonActions {
   constructor(private readonly page: Page) {}
+
+  /**
+   * Captures the current page state and files it under `label` against
+   * whichever step is currently running (see ReportCollector). Swallows
+   * errors — a screenshot failure (e.g. the page/context already closed)
+   * must never fail the action it documents.
+   */
+  private async attachActionScreenshot(label: string): Promise<void> {
+    await ReportCollector.getInstance().attachScreenshot(this.page, label);
+  }
 
   // ------------------------------------------------------------------
   // Navigation
@@ -41,55 +59,64 @@ export class CommonActions {
   // ------------------------------------------------------------------
   // Mouse actions
   // ------------------------------------------------------------------
-  public async click(locator: Locator): Promise<void> {
+  public async click(locator: Locator, label = 'Click'): Promise<void> {
     await locator.waitFor({ state: 'visible' });
     await locator.click();
+    await this.attachActionScreenshot(label);
   }
 
-  public async doubleClick(locator: Locator): Promise<void> {
+  public async doubleClick(locator: Locator, label = 'Double click'): Promise<void> {
     await locator.dblclick();
+    await this.attachActionScreenshot(label);
   }
 
-  public async rightClick(locator: Locator): Promise<void> {
+  public async rightClick(locator: Locator, label = 'Right click'): Promise<void> {
     await locator.click({ button: 'right' });
+    await this.attachActionScreenshot(label);
   }
 
-  public async hover(locator: Locator): Promise<void> {
+  public async hover(locator: Locator, label = 'Hover'): Promise<void> {
     await locator.hover();
+    await this.attachActionScreenshot(label);
   }
 
-  public async dragAndDrop(source: Locator, target: Locator): Promise<void> {
+  public async dragAndDrop(source: Locator, target: Locator, label = 'Drag and drop'): Promise<void> {
     await source.dragTo(target);
+    await this.attachActionScreenshot(label);
   }
 
   // ------------------------------------------------------------------
   // Keyboard / text input
   // ------------------------------------------------------------------
-  public async enterText(locator: Locator, text: string, clearFirst = true): Promise<void> {
+  public async enterText(locator: Locator, text: string, clearFirst = true, label = 'Enter text'): Promise<void> {
     await locator.waitFor({ state: 'visible' });
     if (clearFirst) {
       await locator.fill('');
     }
     await locator.fill(text);
+    await this.attachActionScreenshot(label);
   }
 
   /** Types character-by-character (fires real keydown/keyup), for fields that react to keystrokes. */
-  public async typeText(locator: Locator, text: string, delayMs = 50): Promise<void> {
+  public async typeText(locator: Locator, text: string, delayMs = 50, label = 'Type text'): Promise<void> {
     await locator.pressSequentially(text, { delay: delayMs });
+    await this.attachActionScreenshot(label);
   }
 
-  public async pressKey(locator: Locator, key: string): Promise<void> {
+  public async pressKey(locator: Locator, key: string, label = `Press key: ${key}`): Promise<void> {
     await locator.press(key);
+    await this.attachActionScreenshot(label);
   }
 
-  public async clear(locator: Locator): Promise<void> {
+  public async clear(locator: Locator, label = 'Clear field'): Promise<void> {
     await locator.fill('');
+    await this.attachActionScreenshot(label);
   }
 
   // ------------------------------------------------------------------
   // Dropdown handling — one method, three strategies (polymorphic input)
   // ------------------------------------------------------------------
-  public async selectDropdown(locator: Locator, selector: DropdownSelector): Promise<void> {
+  public async selectDropdown(locator: Locator, selector: DropdownSelector, label = 'Select dropdown option'): Promise<void> {
     if ('byText' in selector) {
       await locator.selectOption({ label: selector.byText });
     } else if ('byValue' in selector) {
@@ -97,17 +124,19 @@ export class CommonActions {
     } else {
       await locator.selectOption({ index: selector.byIndex });
     }
+    await this.attachActionScreenshot(label);
   }
 
   // ------------------------------------------------------------------
   // Checkbox / radio
   // ------------------------------------------------------------------
-  public async setCheckbox(locator: Locator, checked: boolean): Promise<void> {
+  public async setCheckbox(locator: Locator, checked: boolean, label = checked ? 'Check checkbox' : 'Uncheck checkbox'): Promise<void> {
     if (checked) {
       await locator.check();
     } else {
       await locator.uncheck();
     }
+    await this.attachActionScreenshot(label);
   }
 
   // ------------------------------------------------------------------

@@ -1,7 +1,8 @@
 // Cucumber CLI profile, auto-loaded by `npx cucumber-js`.
-// scripts/runTests.js appends the feature file path + per-run --format
-// flags on top of this at execution time (see that file for the report
-// naming scheme).
+// scripts/runTests.js sets REPORT_RUN_DIR (per feature file, per run) on
+// top of this before spawning cucumber-js — stepDefinitions/hooks.ts and
+// utility/ReportCollector.ts read that env var to know where to write the
+// self-contained HTML+JSON report and screenshots for that run.
 const common = [
   '--require-module ts-node/register',
   '--require stepDefinitions/**/*.ts',

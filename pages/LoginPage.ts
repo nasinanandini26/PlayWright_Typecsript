@@ -32,15 +32,16 @@ export class LoginPage extends BasePage {
 
   // ---- Atomic actions ----
   public async enterUsername(username: string): Promise<void> {
-    await this.actions.enterText(this.usernameInput, username);
+    await this.actions.enterText(this.usernameInput, username, true, `Enter username: ${username}`);
   }
 
   public async enterPassword(password: string): Promise<void> {
-    await this.actions.enterText(this.passwordInput, password);
+    // Password value intentionally left out of the attachment label.
+    await this.actions.enterText(this.passwordInput, password, true, 'Enter password');
   }
 
   public async clickLogin(): Promise<void> {
-    await this.actions.click(this.loginButton);
+    await this.actions.click(this.loginButton, 'Click Login button');
   }
 
   // ---- Business workflow built from the atomic actions above ----
