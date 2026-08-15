@@ -53,15 +53,15 @@ export class InventoryPage extends BasePage {
 
   // ---- Actions ----
   public async addProductToCart(productName: string): Promise<void> {
-    await this.actions.click(this.addToCartButtonFor(productName));
+    await this.actions.click(this.addToCartButtonFor(productName), `Add "${productName}" to cart`);
   }
 
   public async removeProductFromCart(productName: string): Promise<void> {
-    await this.actions.click(this.removeFromCartButtonFor(productName));
+    await this.actions.click(this.removeFromCartButtonFor(productName), `Remove "${productName}" from cart`);
   }
 
   public async sortProductsBy(option: SortOption): Promise<void> {
-    await this.actions.selectDropdown(this.sortDropdown, { byText: option });
+    await this.actions.selectDropdown(this.sortDropdown, { byText: option }, `Sort products by "${option}"`);
   }
 
   // ---- Reads ----

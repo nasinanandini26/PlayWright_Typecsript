@@ -13,8 +13,8 @@ configuration layer. Demo target: [saucedemo.com](https://www.saucedemo.com).
 | Page objects (POM)    | `pages/`                | `BasePage` (abstract) + one class per page, locators + methods |
 | Test data             | `testdata/`             | CSV files consumed via `utility/DataHandler.ts` |
 | Config                | `config/`               | `config.properties` (URLs/creds/timeouts) + `playwright.config.ts` (typed Playwright settings) |
-| Utility               | `utility/`               | `CommonActions.ts` (all Playwright interactions) + `DataHandler.ts` (`ConfigReader`, `CsvDataReader`) |
-| Reports               | `testreports/`          | Timestamped, per-feature HTML/JSON reports + failure screenshots |
+| Utility               | `utility/`               | `CommonActions.ts` (all Playwright interactions) + `DataHandler.ts` (`ConfigReader`, `CsvDataReader`) + `ReportCollector.ts` (builds the HTML/JSON report) |
+| Reports               | `testreports/`          | One timestamped, self-contained folder per feature run — HTML report, JSON, and a `screenshots/` folder — with a screenshot after every action |
 
 Two more folders round out the framework as a learning resource:
 
@@ -42,17 +42,60 @@ npm run typecheck                          # tsc --noEmit sanity check
 ```
 
 `scripts/runTests.js` runs each `.feature` file as its own `cucumber-js`
-process, so a single `npm test` produces one HTML+JSON report **per feature
-file**, each stamped with a timestamp:
+process, so a single `npm test` produces one self-contained report folder
+**per feature file**, timestamped `DDMMYYYYHHmm`:
 
 ```
 testreports/
-  html/login_2026-08-13_17-42-05.html
-  html/inventory_2026-08-13_17-42-11.html
-  json/login_2026-08-13_17-42-05.json
-  json/inventory_2026-08-13_17-42-11.json
-  screenshots/...                       # auto-captured on step failure
+  login_150820260218/
+    login_150820260218.html   <- open this in a browser
+    login_150820260218.json
+    screenshots/
+      001_browser-launched.png
+      002_enter-username-standard-user.png
+      003_enter-password.png
+      004_click-login-button.png
+      005_final-state.png
+      ...
+  inventory_150820260225/
+    inventory_150820260225.html
+    inventory_150820260225.json
+    screenshots/...
 ```
+
+### HTML/JSON report (screenshot after every action, per step)
+
+Screenshot capture happens centrally in `utility/CommonActions.ts` — not
+copy-pasted into every step definition — so it applies automatically to
+every current and future click/type/select action, and `utility/ReportCollector.ts`
+files each one against whichever Gherkin step is currently running:
+
+- Every `click`, `enterText`, `typeText`, `pressKey`, `selectDropdown`,
+  `setCheckbox`, `hover`, `doubleClick`, `rightClick` and `dragAndDrop` call
+  in `CommonActions` captures a screenshot the moment it completes and
+  attaches it to the step that triggered it.
+- Each scenario also gets a "Browser launched" screenshot before its first
+  step and a "Final state" screenshot after its last, pass or fail
+  (`Before`/`After` hooks in `stepDefinitions/hooks.ts`).
+- Failed steps get an extra "Failure screenshot" at the exact point of
+  failure (`AfterStep` hook).
+
+The generated HTML shows each step's Gherkin text (its "description") next
+to its status/duration, with its screenshots as small thumbnails directly
+underneath — **no download links, no new tab**: clicking a thumbnail just
+expands it in place on the same page (plain client-side JS toggling the
+image's own size). Scenarios are collapsible `<details>` sections, open by
+default when failed.
+
+Open the report straight from the console summary each run prints, e.g.:
+
+```bash
+open testreports/login_150820260218/login_150820260218.html
+```
+
+Because the folder is self-contained (HTML + JSON + `screenshots/` all
+together, only relative paths), it can be zipped and shared, or archived by
+CI as a single build artifact, without needing a server to view it.
 
 ## Test case IDs
 
@@ -99,7 +142,16 @@ from the tag (for filtering/CI), the report (title), and the feature file
   `doubleClick`, `rightClick`, `takeScreenshot`, and a set of auto-retrying
   assertion wrappers (`assertVisible`, `assertText`, `assertContainsText`,
   `assertCount`, `assertUrlContains`, ...). Page objects compose this class
-  instead of touching `page.*`/`locator.*` directly.
+  instead of touching `page.*`/`locator.*` directly. Every state-changing
+  action also captures a labeled screenshot for the report at the moment it
+  runs — see [the report section](#htmljson-report-screenshot-after-every-action-per-step)
+  above; pass a descriptive `label` argument (as `pages/LoginPage.ts` and
+  `pages/InventoryPage.ts` do) for a readable report entry.
+- **`ReportCollector.ts`** — a module-level singleton (safe because
+  `cucumber.js` runs scenarios sequentially, never `--parallel`) that tracks
+  the currently running scenario/step, saves screenshots into that run's
+  `screenshots/` folder, and renders the final HTML + JSON once
+  `stepDefinitions/hooks.ts`'s `AfterAll` calls `writeReports()`.
 - **`DataHandler.ts`** — `ConfigReader` (Singleton, reads `config.properties`)
   and `CsvDataReader` (reads/caches CSV files from `testdata/`, with a
   `getRowByTestCaseId()` helper used by the data-driven login scenario).

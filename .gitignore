@@ -1,11 +1,10 @@
 node_modules/
 dist/
 
-# Generated per-run reports and captures (folders are kept via .gitkeep)
-testreports/json/*
-testreports/html/*
-testreports/screenshots/*
-!testreports/**/.gitkeep
+# Generated per-run report folders (testreports/<feature>_<DDMMYYYYHHmm>/,
+# each with its own html+json+screenshots) — folder itself kept via .gitkeep.
+testreports/*
+!testreports/.gitkeep
 
 test-results/
 playwright-report/
