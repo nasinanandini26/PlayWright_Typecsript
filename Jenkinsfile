@@ -84,15 +84,18 @@ pipeline {
       post {
         always {
           // This stage's container runs as root (mcr.microsoft.com/playwright
-          // defaults to root regardless of `args` above), so testreports/ it
-          // creates in the shared workspace is root-owned. The Publish Report
-          // stage runs as uid 1000 (the official jenkins/jenkins image's fixed
-          // `jenkins` user) and needs to overwrite those same files when it
-          // unstashes 'reports'. chmod alone isn't enough: tar extraction also
-          // restores each file's original mtime, and setting mtime on a file
-          // you don't own fails with "Operation not permitted" even if it's
-          // world-writable -- chown is what actually fixes that.
-          sh 'chown -R 1000:1000 testreports && chmod -R a+rwX testreports || true'
+          // defaults to root regardless of `args` above), so EVERYTHING it
+          // writes into the shared workspace -- node_modules, .auth/,
+          // testreports/ -- comes out root-owned. That breaks two things run
+          // by uid 1000 (the official jenkins/jenkins image's fixed `jenkins`
+          // user): the Publish Report stage's unstash of testreports/ (tar
+          // extraction restores each file's mtime, which requires owning the
+          // file -- "Operation not permitted" even on a world-writable file),
+          // and cleanWs()/the next build's workspace wipe, which silently
+          // can't delete root-owned files either and leaves them orphaned
+          // under playwright-bdd_ws-cleanup_*/ forever. chown the whole
+          // workspace back to uid 1000 before this container goes away.
+          sh 'chown -R 1000:1000 . || true'
           stash includes: 'testreports/**', name: 'reports', allowEmpty: true
         }
       }
