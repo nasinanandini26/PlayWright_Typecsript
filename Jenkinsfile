@@ -28,10 +28,13 @@ pipeline {
   }
 
   parameters {
-    string(
+    // Dropdown instead of free text, so "Build with Parameters" lets you just
+    // pick a tag. Keep this list in sync with the @tags actually used across
+    // features/*.feature. ALL (the default) runs every feature untagged.
+    choice(
       name: 'TAGS',
-      defaultValue: '',
-      description: 'Cucumber tag expression to filter scenarios, e.g. "@smoke". Leave blank to run every feature.'
+      choices: ['ALL', '@smoke', '@api', '@inventory', '@login', '@guest', '@positive', '@negative', '@datadriven'],
+      description: 'Which scenarios to run. ALL runs every feature; any other choice runs only scenarios carrying that tag.'
     )
     string(
       name: 'PLAYWRIGHT_IMAGE',
@@ -69,7 +72,7 @@ pipeline {
         sh 'npm ci'
         sh 'npm run typecheck'
         script {
-          def tagArgs = params.TAGS?.trim() ? "--tags \"${params.TAGS}\"" : ''
+          def tagArgs = (params.TAGS && params.TAGS != 'ALL') ? "--tags \"${params.TAGS}\"" : ''
           sh "node scripts/runTests.js ${tagArgs}"
         }
       }
