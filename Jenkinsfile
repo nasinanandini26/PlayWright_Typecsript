@@ -46,6 +46,15 @@ pipeline {
       defaultValue: 'mcr.microsoft.com/playwright:v1.47.0-jammy',
       description: 'Docker image used for the Test stage. Keep the tag in sync with the @playwright/test version in package.json.'
     )
+    // Only takes effect once the job's Git SCM "Branch Specifier" is set to
+    // */${BRANCH_NAME} -- the checkout happens before Jenkins has even read
+    // this Jenkinsfile, so the branch can't be picked from in here alone.
+    // Only a branch that itself contains this Jenkinsfile can be selected.
+    string(
+      name: 'BRANCH_NAME',
+      defaultValue: 'apiTestCases',
+      description: 'Git branch to build (must contain this Jenkinsfile). Requires the job SCM branch specifier to be */${BRANCH_NAME}.'
+    )
   }
 
   environment {
@@ -68,7 +77,16 @@ pipeline {
       agent {
         docker {
           image "${params.PLAYWRIGHT_IMAGE}"
-          args '-u root:root'
+          // playwright-browsers is a named Docker volume (persists on the
+          // Docker host across builds/containers, unlike the container's own
+          // writable layer) mounted over /ms-playwright -- the path `npm ci`'s
+          // postinstall `playwright install` downloads browsers into. It
+          // shadows whatever revisions the image itself baked in there, so
+          // the first build populates the volume and every build after that
+          // finds the required revision already present and skips the
+          // ~400 MiB download entirely. Only re-downloads when the installed
+          // @playwright/test version actually needs a different revision.
+          args '-u root:root -v playwright-browsers:/ms-playwright'
           reuseNode false
         }
       }
