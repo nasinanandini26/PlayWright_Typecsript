@@ -25,6 +25,11 @@ pipeline {
     timestamps()
     buildDiscarder(logRotator(numToKeepStr: '20'))
     disableConcurrentBuilds()
+    // Every stage below picks its own `agent`, which by default re-runs an
+    // implicit `checkout scm` on each new node allocation. The "Checkout"
+    // stage already does that explicitly and stash/unstash moves files
+    // between stages, so the implicit ones are pure waste -- skip them.
+    skipDefaultCheckout()
   }
 
   parameters {
@@ -78,13 +83,16 @@ pipeline {
       }
       post {
         always {
-          // This stage's container runs as root (see `args` above), so
-          // testreports/ it creates in the shared workspace is root-owned.
-          // The Publish Report stage runs as the non-root `jenkins` user on
-          // the controller and needs to overwrite those same paths when it
-          // unstashes 'reports' -- without this, that unstash fails with
-          // AccessDeniedException.
-          sh 'chmod -R a+rwX testreports || true'
+          // This stage's container runs as root (mcr.microsoft.com/playwright
+          // defaults to root regardless of `args` above), so testreports/ it
+          // creates in the shared workspace is root-owned. The Publish Report
+          // stage runs as uid 1000 (the official jenkins/jenkins image's fixed
+          // `jenkins` user) and needs to overwrite those same files when it
+          // unstashes 'reports'. chmod alone isn't enough: tar extraction also
+          // restores each file's original mtime, and setting mtime on a file
+          // you don't own fails with "Operation not permitted" even if it's
+          // world-writable -- chown is what actually fixes that.
+          sh 'chown -R 1000:1000 testreports && chmod -R a+rwX testreports || true'
           stash includes: 'testreports/**', name: 'reports', allowEmpty: true
         }
       }
