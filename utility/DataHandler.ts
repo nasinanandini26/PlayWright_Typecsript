@@ -55,8 +55,15 @@ export class ConfigReader {
     });
   }
 
+  /** Lets CI (e.g. Jenkins) override a property without touching config.properties,
+   *  e.g. "slow.mo.millis" -> env var SLOW_MO_MILLIS, "headless" -> HEADLESS. */
+  private envOverride(key: string): string | undefined {
+    const envKey = key.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+    return process.env[envKey];
+  }
+
   public get(key: string): string {
-    const value = this.properties.get(key);
+    const value = this.envOverride(key) ?? this.properties.get(key);
     if (value === undefined) {
       throw new Error(`Property "${key}" was not found in config.properties`);
     }
@@ -64,7 +71,7 @@ export class ConfigReader {
   }
 
   public getOrDefault(key: string, defaultValue: string): string {
-    return this.properties.get(key) ?? defaultValue;
+    return this.envOverride(key) ?? this.properties.get(key) ?? defaultValue;
   }
 
   public getNumber(key: string): number {

@@ -1,0 +1,19 @@
+# jenkins/docker-compose.override.yml
+# ---------------------------------------------------------------------
+# LOCAL-ONLY convenience. Docker Compose auto-merges this file on top of
+# docker-compose.yml for any plain `docker compose up` run from this
+# directory -- no extra flag needed.
+#
+# Setting these two env vars makes init.groovy.d/basic-security.groovy
+# (baked into the image by Dockerfile) create this account and skip the
+# setup wizard entirely -- Jenkins is reachable and logged-in-ready as soon
+# as the container reports healthy.
+#
+# admin/admin is intentionally weak -- fine for a localhost-only controller
+# you can `docker compose down -v` and recreate at will. Never reuse this
+# override, or these credentials, for anything reachable beyond localhost.
+services:
+  jenkins:
+    environment:
+      - JENKINS_ADMIN_USER=admin
+      - JENKINS_ADMIN_PASSWORD=admin

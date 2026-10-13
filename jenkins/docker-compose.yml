@@ -1,0 +1,45 @@
+# jenkins/docker-compose.yml
+# ---------------------------------------------------------------------
+# Runs the Jenkins controller for this project locally, e.g. via Docker
+# Desktop (macOS/Windows) or a native Docker Engine on Linux:
+#
+#   cd jenkins
+#   DOCKER_GID=$(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+#     alpine stat -c '%g' /var/run/docker.sock)
+#   docker compose up -d --build
+#
+# Why `docker run ... stat` instead of `getent group docker` on the host:
+# it asks a Linux container what GID it actually sees on the bind-mounted
+# socket, which is exactly what the Jenkins container will see too -- and
+# it works the same way whether Docker is native (a Linux host) or running
+# inside Docker Desktop's VM (macOS/Windows), where the host's own `docker`
+# group (if it even exists) doesn't necessarily match. `getent` also isn't
+# available in macOS's shell at all.
+#
+# jenkins_home is a named volume, so `docker compose down` (without -v)
+# preserves jobs, credentials and the initial admin password across
+# container recreates/image rebuilds.
+#
+# `docker compose up` run from this directory auto-merges
+# docker-compose.override.yml on top of this file -- that's what provisions
+# a fixed admin/admin account and skips the setup wizard (see that file and
+# init.groovy.d/basic-security.groovy for how).
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DOCKER_GID: ${DOCKER_GID:-999}
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+
+volumes:
+  jenkins_home:

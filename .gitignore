@@ -8,6 +8,11 @@ testreports/*
 
 test-results/
 playwright-report/
+
+# Saved login session (storage.state.path, used by default for every
+# scenario except @guest ones) — contains live session cookies, generated
+# at runtime, never commit it.
+.auth/
 *.log
 .DS_Store
 .env
