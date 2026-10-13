@@ -29,8 +29,15 @@ Given('I am on the SauceDemo login page', async function (this: CustomWorld) {
 });
 
 Given('I am logged in as {string}', async function (this: CustomWorld, username: string) {
-  await this.loginPage.open();
-  await this.loginPage.login(username, config.get('valid.password'));
+  if (this.usingStorageState) {
+    // The scenario is @authenticated: its context already carries a saved
+    // session (see stepDefinitions/hooks.ts), so skip the login form and go
+    // straight to the inventory page — the stored cookies keep us logged in.
+    await this.inventoryPage.open();
+  } else {
+    await this.loginPage.open();
+    await this.loginPage.login(username, config.get('valid.password'));
+  }
   expect(await this.inventoryPage.isLoaded()).toBeTruthy();
 });
 

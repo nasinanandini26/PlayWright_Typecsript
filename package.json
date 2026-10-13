@@ -8,6 +8,7 @@
     "test:tags": "node scripts/runTests.js --tags",
     "test:login": "node scripts/runTests.js features/login.feature",
     "test:inventory": "node scripts/runTests.js features/inventory.feature",
+    "test:api": "node scripts/runTests.js features/api.feature",
     "exercise": "bash exercises/run.sh",
     "install:browsers": "playwright install",
     "typecheck": "tsc --noEmit",
