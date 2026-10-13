@@ -2,7 +2,7 @@
 
 A Playwright + TypeScript test automation framework using **Cucumber (BDD)**,
 the **Page Object Model**, **CSV-driven test data**, and a **property-file**
-configuration layer. Demo target: [saucedemo.com](https://www.saucedemo.com).
+configuration layer. Demo target: [saucedemo.com]().
 
 ## Folder structure
 
@@ -133,9 +133,14 @@ Create a **Pipeline** job with "Pipeline script from SCM" → Git →
 ### 3. Run it
 
 Build with parameters:
-- `TAGS` — Cucumber tag expression (e.g. `@smoke`), blank runs every feature.
+- `TAGS` — dropdown of the `@tags` used across `features/*.feature`
+  (`ALL`, `@smoke`, `@api`, ...); `ALL` runs every feature.
 - `PLAYWRIGHT_IMAGE` — defaults to `mcr.microsoft.com/playwright:v1.47.0-jammy`;
   bump the tag if `@playwright/test` in `package.json` is upgraded.
+- `BRANCH_NAME` — live dropdown of this repo's actual branches (Git Parameter
+  plugin), only builds branches that themselves contain this `Jenkinsfile`.
+  Takes effect because the job's Git SCM "Branch Specifier" is
+  `*/${BRANCH_NAME}` — see `notes/06-cicd-jenkins.md` for the full wiring.
 
 The build archives `testreports/**` and publishes the latest run's HTML
 report under "Cucumber BDD Report" on the build page.

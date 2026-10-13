@@ -129,15 +129,28 @@ environment: HEADLESS = 'true'
 agent {
   docker {
     image "${params.PLAYWRIGHT_IMAGE}"   // e.g. mcr.microsoft.com/playwright:v1.47.0-jammy
-    args '-u root:root'
+    args '-u root:root -v playwright-browsers:/ms-playwright'
   }
 }
 ```
 
-Microsoft's official Playwright image already contains the matching browser
+Microsoft's official Playwright image already contains matching browser
 builds **and** their Linux dependencies. Keep its tag in sync with
 `@playwright/test` in `package.json` (that's what the `PLAYWRIGHT_IMAGE`
 parameter is for — bump it when you upgrade Playwright).
+
+**Browser caching (`-v playwright-browsers:/ms-playwright`):** `npm ci`'s
+postinstall (`playwright install`) only trusts the exact browser revision its
+locked `@playwright/test` version needs — if that doesn't match what the
+image tag happens to have baked in (common, since `package.json` floats on
+`^1.47.0`), it deletes the image's browsers and re-downloads the right ones,
+every single build, ~400 MiB over ~2–3 minutes. Mounting a *named Docker
+volume* (persists on the host across containers, unlike a container's own
+writable layer) over that same path fixes it: the first build downloads once
+into the volume, and every build after that finds the revision it needs
+already there and skips the download entirely — confirmed in practice
+(~3 min → ~30 sec end to end). It only re-downloads again if the required
+revision actually changes.
 
 ### Why `HEADLESS = 'true'`
 
@@ -149,19 +162,45 @@ and `ConfigReader` lets any env var override the matching property — see
 
 ### Parameters
 
-- **`TAGS`** — a Cucumber tag expression (e.g. `@smoke`, or `@api`). Blank runs
-  every feature. The pipeline forwards it as `--tags "<expr>"`.
+- **`TAGS`** — a dropdown (`choice()`) of the `@tags` actually used across
+  `features/*.feature` (`ALL`, `@smoke`, `@api`, ...). `ALL` runs every
+  feature; anything else runs only scenarios carrying that tag, forwarded as
+  `--tags "<expr>"`.
 - **`PLAYWRIGHT_IMAGE`** — the Docker image for the Test stage.
+- **`BRANCH_NAME`** — a *live* dropdown of this repo's actual branches, via
+  the **Git Parameter plugin** (`jenkins/plugins.txt`). A plain `choice()`
+  would just be a hardcoded list baked into the Jenkinsfile text; `gitParameter`
+  instead queries the configured Git SCM's refs each time the build page
+  renders:
+  ```groovy
+  gitParameter(
+    name: 'BRANCH_NAME',
+    type: 'PT_BRANCH',
+    branchFilter: 'origin/(.*)',
+    useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
+    defaultValue: 'apiTestCases',
+    sortMode: 'ASCENDING_SMART',
+    selectedValue: 'DEFAULT'
+  )
+  ```
+  It only *takes effect* because the job's Git SCM "Branch Specifier" (a
+  setting on the job itself, not in this Jenkinsfile) is `*/${BRANCH_NAME}`
+  — Jenkins resolves that against whichever value you picked before
+  checking out. Only a branch that itself contains this `Jenkinsfile` can
+  actually build (anything else fails fast with "Unable to find Jenkinsfile
+  from git ..." — verified by deliberately picking `main`, which predates
+  this CI work).
 
 ### Pointing a job at this repo
 
 Create a **Pipeline** job with "Pipeline script from SCM" → Git →
 `https://github.com/nasinanandini26/PlayWright_Typecsript.git`, the branch
 that has the `Jenkinsfile`, script path `Jenkinsfile`. First build has to run
-once before the `TAGS`/`PLAYWRIGHT_IMAGE` parameters show up in the UI —
+once before `TAGS`/`PLAYWRIGHT_IMAGE`/`BRANCH_NAME` show up in the UI —
 Jenkins only learns a pipeline's `parameters {}` block by reading the
 `Jenkinsfile` from a completed checkout. After that, "Build with Parameters"
-lets you set `TAGS` to e.g. `@smoke` for just the smoke-tagged scenarios.
+lets you pick a tag and (once the SCM's Branch Specifier is switched to
+`*/${BRANCH_NAME}` — see above) a branch too.
 
 ### The report
 
