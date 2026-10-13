@@ -52,17 +52,16 @@ pipeline {
     // -- the checkout happens before Jenkins has even read this Jenkinsfile,
     // so the branch can't be picked from in here alone. Only a branch that
     // itself contains this Jenkinsfile will actually build successfully.
+    
     gitParameter(
-      name: 'BRANCH_NAME',
-      type: 'PT_BRANCH',
-      branchFilter: 'origin/(.*)',
-      useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
-      defaultValue: 'apiTestCases',
-      sortMode: 'ASCENDING_SMART',
-      selectedValue: 'DEFAULT',
-      quickFilterEnabled: true,
-      description: 'Git branch to build (must contain this Jenkinsfile).'
-    )
+            name: 'BRANCH_TO_BUILD', 
+            type: 'PT_BRANCH', 
+            defaultValue: 'main', 
+            description: 'Select the GitHub branch to build',
+            useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
+            sortMode: 'ASCENDING_SMART',
+            branchFilter: 'origin/(.*)'
+        )
   }
 
   environment {
