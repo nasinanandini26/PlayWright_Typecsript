@@ -78,6 +78,13 @@ pipeline {
       }
       post {
         always {
+          // This stage's container runs as root (see `args` above), so
+          // testreports/ it creates in the shared workspace is root-owned.
+          // The Publish Report stage runs as the non-root `jenkins` user on
+          // the controller and needs to overwrite those same paths when it
+          // unstashes 'reports' -- without this, that unstash fails with
+          // AccessDeniedException.
+          sh 'chmod -R a+rwX testreports || true'
           stash includes: 'testreports/**', name: 'reports', allowEmpty: true
         }
       }
