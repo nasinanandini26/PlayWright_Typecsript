@@ -1,4 +1,4 @@
-@login
+@login @guest
 Feature: SauceDemo Login
   As a registered SauceDemo user
   I want to log in with my credentials
