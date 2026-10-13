@@ -46,14 +46,22 @@ pipeline {
       defaultValue: 'mcr.microsoft.com/playwright:v1.47.0-jammy',
       description: 'Docker image used for the Test stage. Keep the tag in sync with the @playwright/test version in package.json.'
     )
-    // Only takes effect once the job's Git SCM "Branch Specifier" is set to
-    // */${BRANCH_NAME} -- the checkout happens before Jenkins has even read
-    // this Jenkinsfile, so the branch can't be picked from in here alone.
-    // Only a branch that itself contains this Jenkinsfile can be selected.
-    string(
+    // Live dropdown of real branches on the repo (Git Parameter plugin --
+    // see jenkins/plugins.txt), not a hardcoded list. Only takes effect
+    // because the job's Git SCM "Branch Specifier" is set to */${BRANCH_NAME}
+    // -- the checkout happens before Jenkins has even read this Jenkinsfile,
+    // so the branch can't be picked from in here alone. Only a branch that
+    // itself contains this Jenkinsfile will actually build successfully.
+    gitParameter(
       name: 'BRANCH_NAME',
+      type: 'PT_BRANCH',
+      branchFilter: 'origin/(.*)',
+      useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
       defaultValue: 'apiTestCases',
-      description: 'Git branch to build (must contain this Jenkinsfile). Requires the job SCM branch specifier to be */${BRANCH_NAME}.'
+      sortMode: 'ASCENDING_SMART',
+      selectedValue: 'DEFAULT',
+      quickFilterEnabled: true,
+      description: 'Git branch to build (must contain this Jenkinsfile).'
     )
   }
 
