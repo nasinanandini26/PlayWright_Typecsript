@@ -1,0 +1,13 @@
+{
+  // Fixes "undefined step" false positives from Cucumber/Gherkin VS Code
+  // extensions — without this, they don't know where to look and flag
+  // every step as undefined even though `npx cucumber-js --dry-run` binds
+  // them all correctly at runtime. Mirrors cucumber.js's own `require` glob.
+  "cucumberautocomplete.steps": ["stepDefinitions/**/*.ts"],
+  "cucumberautocomplete.syncfeatures": "features/**/*.feature",
+  "cucumberautocomplete.strictGherkinCompletion": false,
+
+  // For the official "Cucumber (Gherkin) Full Support" extension (publisher: CucumberOpen).
+  "cucumber.features": ["features/**/*.feature"],
+  "cucumber.glue": ["stepDefinitions/**/*.ts"]
+}

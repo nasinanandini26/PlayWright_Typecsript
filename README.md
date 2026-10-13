@@ -97,6 +97,61 @@ Because the folder is self-contained (HTML + JSON + `screenshots/` all
 together, only relative paths), it can be zipped and shared, or archived by
 CI as a single build artifact, without needing a server to view it.
 
+## CI/CD: Jenkins (local, via Docker Desktop)
+
+This repo ships everything needed to run a Jenkins controller locally and
+have it build this suite straight from GitHub:
+
+| Piece | What it does |
+|---|---|
+| `jenkins/` | `Dockerfile` (official Jenkins LTS image + Docker CLI, so Jenkins can launch sibling containers against the host's Docker daemon), `plugins.txt`, `docker-compose.yml`, `docker-compose.override.yml` (local-only `admin`/`admin` login), `init.groovy.d/` (provisions that account + skips the setup wizard). |
+| `Jenkinsfile` | The pipeline itself: checkout → run tests inside Microsoft's official `playwright` Docker image → publish the HTML report + archive `testreports/`. |
+
+**Why a Docker agent:** the `playwright` image already has the right browsers
+and OS deps baked in, so the Jenkins host itself only ever needs Docker —
+nothing Node/Playwright-specific to install or keep in sync.
+
+### 1. Start Jenkins
+
+```bash
+cd jenkins
+DOCKER_GID=$(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine stat -c '%g' /var/run/docker.sock)
+docker compose up -d --build
+```
+
+Open **http://localhost:8080** and log in with **`admin` / `admin`** — no
+setup wizard, that account is provisioned automatically
+(`docker-compose.override.yml` + `init.groovy.d/basic-security.groovy`;
+see `notes/06-cicd-jenkins.md` for how, and why it's local-only).
+
+### 2. Point a pipeline job at GitHub
+
+Create a **Pipeline** job with "Pipeline script from SCM" → Git →
+`https://github.com/nasinanandini26/PlayWright_Typecsript.git`, branch
+`main` (or whichever branch has the `Jenkinsfile`), script path `Jenkinsfile`.
+
+### 3. Run it
+
+Build with parameters:
+- `TAGS` — Cucumber tag expression (e.g. `@smoke`), blank runs every feature.
+- `PLAYWRIGHT_IMAGE` — defaults to `mcr.microsoft.com/playwright:v1.47.0-jammy`;
+  bump the tag if `@playwright/test` in `package.json` is upgraded.
+
+The build archives `testreports/**` and publishes the latest run's HTML
+report under "Cucumber BDD Report" on the build page.
+
+`config/config.properties` defaults to `headless=false` for local debugging;
+`ConfigReader` now lets any property be overridden by an env var (dots →
+underscores, uppercased — e.g. `headless` → `HEADLESS`), and the `Jenkinsfile`
+sets `HEADLESS=true` since there's no display in CI.
+
+### Teardown
+
+```bash
+cd jenkins
+docker compose down -v   # -v also wipes jenkins_home (jobs, credentials)
+```
+
 ## Test case IDs
 
 Every `Scenario` carries a `@TC_00N` tag **and** repeats the ID in the

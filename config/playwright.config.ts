@@ -26,6 +26,10 @@ export const browserLaunchOptions = {
 export const playwrightConfig: PlaywrightTestConfig = {
   use: {
     baseURL: config.get('base.url'),
+    // NOTE: storageState is applied per-scenario in stepDefinitions/hooks.ts,
+    // not here — it loads config's storage.state.path into every scenario's
+    // context by default (so each starts logged in) EXCEPT @guest scenarios
+    // (login.feature), which must start logged out to test the login form.
     viewport: {
       width: config.getNumber('viewport.width'),
       height: config.getNumber('viewport.height'),
@@ -35,7 +39,8 @@ export const playwrightConfig: PlaywrightTestConfig = {
     trace: 'retain-on-failure',
     actionTimeout: config.getNumber('default.timeout.millis'),
     navigationTimeout: config.getNumber('default.timeout.millis'),
-  },
+    },
+   // workers: 2,
   timeout: config.getNumber('default.timeout.millis') * 2,
 };
 

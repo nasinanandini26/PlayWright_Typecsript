@@ -1,0 +1,13 @@
+# jenkins/plugins.txt
+# ---------------------------------------------------------------------
+# Installed automatically by jenkins/Dockerfile via `jenkins-plugin-cli`
+# on first build of the controller image. Keep this list minimal --
+# everything here is required by Jenkinsfile at the repo root.
+git:latest
+workflow-aggregator:latest
+docker-workflow:latest
+htmlpublisher:latest
+timestamper:latest
+ws-cleanup:latest
+credentials-binding:latest
+pipeline-stage-view:latest
