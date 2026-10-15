@@ -48,20 +48,22 @@ pipeline {
     )
     // Live dropdown of real branches on the repo (Git Parameter plugin --
     // see jenkins/plugins.txt), not a hardcoded list. Only takes effect
-    // because the job's Git SCM "Branch Specifier" is set to */${BRANCH_NAME}
+    // because the job's Git SCM "Branch Specifier" is set to */${BRANCH_TO_BUILD}
+    // (must match `name` below exactly -- if they drift, Jenkins leaves the
+    // ${...} unexpanded and checkout fails with "couldn't find remote ref").
     // -- the checkout happens before Jenkins has even read this Jenkinsfile,
     // so the branch can't be picked from in here alone. Only a branch that
     // itself contains this Jenkinsfile will actually build successfully.
-    
+    // Deliberately not named BRANCH_NAME: that's a Jenkins built-in env var.
     gitParameter(
-            name: 'BRANCH_TO_BUILD', 
-            type: 'PT_BRANCH', 
-            defaultValue: 'main', 
-            description: 'Select the GitHub branch to build',
-            useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
-            sortMode: 'ASCENDING_SMART',
-            branchFilter: 'origin/(.*)'
-        )
+      name: 'BRANCH_TO_BUILD',
+      type: 'PT_BRANCH',
+      branchFilter: 'origin/(.*)',
+      useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
+      defaultValue: 'main',
+      sortMode: 'ASCENDING_SMART',
+      description: 'Select the GitHub branch to build (must contain this Jenkinsfile).'
+    )
   }
 
   environment {

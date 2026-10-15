@@ -137,10 +137,10 @@ Build with parameters:
   (`ALL`, `@smoke`, `@api`, ...); `ALL` runs every feature.
 - `PLAYWRIGHT_IMAGE` — defaults to `mcr.microsoft.com/playwright:v1.47.0-jammy`;
   bump the tag if `@playwright/test` in `package.json` is upgraded.
-- `BRANCH_NAME` — live dropdown of this repo's actual branches (Git Parameter
+- `BRANCH_TO_BUILD` — live dropdown of this repo's actual branches (Git Parameter
   plugin), only builds branches that themselves contain this `Jenkinsfile`.
   Takes effect because the job's Git SCM "Branch Specifier" is
-  `*/${BRANCH_NAME}` — see `notes/06-cicd-jenkins.md` for the full wiring.
+  `*/${BRANCH_TO_BUILD}` — see `notes/06-cicd-jenkins.md` for the full wiring.
 
 The build archives `testreports/**` and publishes the latest run's HTML
 report under "Cucumber BDD Report" on the build page.

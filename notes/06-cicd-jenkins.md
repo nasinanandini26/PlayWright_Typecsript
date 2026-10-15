@@ -167,24 +167,23 @@ and `ConfigReader` lets any env var override the matching property — see
   feature; anything else runs only scenarios carrying that tag, forwarded as
   `--tags "<expr>"`.
 - **`PLAYWRIGHT_IMAGE`** — the Docker image for the Test stage.
-- **`BRANCH_NAME`** — a *live* dropdown of this repo's actual branches, via
+- **`BRANCH_TO_BUILD`** — a *live* dropdown of this repo's actual branches, via
   the **Git Parameter plugin** (`jenkins/plugins.txt`). A plain `choice()`
   would just be a hardcoded list baked into the Jenkinsfile text; `gitParameter`
   instead queries the configured Git SCM's refs each time the build page
   renders:
   ```groovy
   gitParameter(
-    name: 'BRANCH_NAME',
+    name: 'BRANCH_TO_BUILD',
     type: 'PT_BRANCH',
     branchFilter: 'origin/(.*)',
     useRepository: 'https://github.com/nasinanandini26/PlayWright_Typecsript.git',
-    defaultValue: 'apiTestCases',
-    sortMode: 'ASCENDING_SMART',
-    selectedValue: 'DEFAULT'
+    defaultValue: 'main',
+    sortMode: 'ASCENDING_SMART'
   )
   ```
   It only *takes effect* because the job's Git SCM "Branch Specifier" (a
-  setting on the job itself, not in this Jenkinsfile) is `*/${BRANCH_NAME}`
+  setting on the job itself, not in this Jenkinsfile) is `*/${BRANCH_TO_BUILD}`
   — Jenkins resolves that against whichever value you picked before
   checking out. Only a branch that itself contains this `Jenkinsfile` can
   actually build (anything else fails fast with "Unable to find Jenkinsfile
@@ -196,11 +195,11 @@ and `ConfigReader` lets any env var override the matching property — see
 Create a **Pipeline** job with "Pipeline script from SCM" → Git →
 `https://github.com/nasinanandini26/PlayWright_Typecsript.git`, the branch
 that has the `Jenkinsfile`, script path `Jenkinsfile`. First build has to run
-once before `TAGS`/`PLAYWRIGHT_IMAGE`/`BRANCH_NAME` show up in the UI —
+once before `TAGS`/`PLAYWRIGHT_IMAGE`/`BRANCH_TO_BUILD` show up in the UI —
 Jenkins only learns a pipeline's `parameters {}` block by reading the
 `Jenkinsfile` from a completed checkout. After that, "Build with Parameters"
 lets you pick a tag and (once the SCM's Branch Specifier is switched to
-`*/${BRANCH_NAME}` — see above) a branch too.
+`*/${BRANCH_TO_BUILD}` — see above) a branch too.
 
 ### The report
 
