@@ -190,6 +190,16 @@ and `ConfigReader` lets any env var override the matching property — see
   from git ..." — verified by deliberately picking `main`, which predates
   this CI work).
 
+  **Symptom if the Branch Specifier drifts**: if the job is ever recreated or
+  edited and the Branch Specifier gets set to `*/${BRANCH_NAME}` (Jenkins'
+  own built-in env var) instead of `*/${BRANCH_TO_BUILD}`, the build fails
+  instantly in the implicit checkout with `fatal: couldn't find remote ref
+  refs/heads/${BRANCH_NAME}` — `BRANCH_NAME` is never set for this job type,
+  so Jenkins fetches the literal unexpanded string. Fix: open the job →
+  Configure → Pipeline → Branch Specifier → set it back to
+  `*/${BRANCH_TO_BUILD}` (verified by reproducing and fixing exactly this on
+  the local `jenkins/` controller).
+
 ### Pointing a job at this repo
 
 Create a **Pipeline** job with "Pipeline script from SCM" → Git →
